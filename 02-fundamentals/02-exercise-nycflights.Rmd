@@ -1,8 +1,8 @@
 ---
 title: "Assingment NYC Flight Data"
-author: "Your Name Here"
+author: "Yonit Marcus"
 date: "October 5, 2016"
-output: html_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -19,6 +19,24 @@ Using the `readr` package read the `flights` data.
 
 ```{r}
 
+## tried both readr as well as read.csv
+flights2 <- readr::read_csv('c:/csx460_rep/csx460/02-fundamentals/data/flights.csv')
+
+flights <- read.csv("C:/csx460_rep/CSX460/02-fundamentals/data/flights.csv",stringsAsFactors = FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```
 
@@ -26,7 +44,12 @@ Using the `readr` package read the `flights` data.
 
 Plot a histogram of arrival delays and departure delays 
 
-```{r}
+hist(flights$arr_delay, main = "Histogram of arrival delays",
++      xlab = "Arrival Delay (mins)")
+
+ hist(flights$dep_delay, main = "Histogram of departure delays",
++      xlab = "Departure Delay (mins)")
+
 
 ```
 
@@ -35,6 +58,11 @@ Plot a histogram of arrival delays and departure delays
 Plot a scatterplot of date vs arrival delay 
 
 ```{r}
+
+plot(x = as.Date(flights[,19]), y = flights$arr_delay,
++      main = "Date vs. Arrival Delay",
++      xlab = "Date",
++      ylab = "Arrival Delay (mins)")
 
 ```
 
@@ -46,6 +74,8 @@ Create a `table` of occurences of origin airports and carrier.
 
 ```{r}
 
+ table(flights[c("carrier","origin")])
+
 
 ```
 
@@ -55,6 +85,16 @@ Create a `table` of occurences of origin airports and carrier.
 **Read** in the other data sets. Use methods to join the data together to create a single table containing one record per row.  (HINT: see `?data.table` or `?dplyr::join`)
 
 ```{r}
+
+
+airports <- read.csv("C:/csx460_rep/CSX460/02-fundamentals/data/airports.csv",stringsAsFactors = FALSE)
+   
+ planes <- read.csv("C:/csx460_rep/CSX460/02-fundamentals/data/planes.csv",stringsAsFactors = FALSE)
+  
+weather <- read.csv("C:/csx460_rep/CSX460/02-fundamentals/data/weather.csv",stringsAsFactors = FALSE)
+detailed_flights<-dplyr::left_join(flights,planes, by = "tailnum")
+detailed_flights<-dplyr::left_join(detailed_flights,airports, c("dest" = "faa"))
+detailed_flights<-dplyr::left_join(detailed_flights,airports, c("origin" = "faa"))
 
 ```
 
