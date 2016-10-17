@@ -1,12 +1,18 @@
 ---
 title: "NYCFlights: Arrival Delay Regression Model"
-author: "[Your Name]"
-date: "[Today's Date]"
+author: "Yonit Marcus"
+date: "10/17/2016"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(ggplot2)
+library(magrittr)
+library(stringr)
+library(dplyr)
+library(data.table)
 ```
 
 # NYCFlights Model
@@ -18,8 +24,18 @@ for building a model. Describe/Explain each of the steps and show all work in co
 ## Step 1: Collect Data 
 
 ```{r "Step 1: Collect Data" }
-
+flights <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/flights.csv')
+planes <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/planes.csv')
+airports <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/airports.csv')
+weather <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/weather.csv')
+YX<-left_join(flights,weather,by=c("origin","year","month","day","hour"))
+YX<-left_join(YX,planes, by = "tailnum")
+YX<-left_join(YX,airports, c("dest" = "faa"))
+YX<-left_join(YX,airports, c("origin" = "faa"))
+YX$tailage=YX$year.x-YX$year.y
 ```
+
+
 
 ## Step 2: Explore and Prep The Data
 
@@ -28,12 +44,26 @@ One of the things not done in the MLwR text is a pairwise comparison between the
 
 
 ```{r "Step 2: Explore and Prep The Data" }
+## plotting response distrbution
+hist(YX$arr_delay)
 
+pairs(YX[c("arr_delay","dep_delay","distance","air_time","engines","wind_dir","wind_speed","seats")])
+ cor(flights$arr_delay,flights$dep_delay,use="complete")
+## cor between dep_delay and arr_delay is 0.914
+  
+  aggdata <-aggregate(data=flights, arr_delay~carrier, 
+   FUN=mean, na.rm=TRUE)
 ```
 
 ## Step 3:  Train The Model
 
 ```{r "Step 3: Train The Model" }
+
+## Naive model - use only departue delay
+
+delay_model_simple=lm(arr_delay~dep_delay,data=YX)
+delay_model=lm(arr_delay~dep_delay+air_time+distance+temp+dewp+humid+wind_dir+wind_speed+wind_gust+pressure+seats+tailage,data=YX)
+
 
 ```
 
@@ -42,7 +72,10 @@ One of the things not done in the MLwR text is a pairwise comparison between the
 Evaluating performance is a crutial step, that has yet to be treated well by the MLwR. Think about some of the tools that you have for evaluating performance.  Choose one and articulate why you have chosen it.
 
 ```{r "Step 4: Evaluate Performance" }
-
+summary(delay_model_simple)
+# Multiple R-squared:  0.8369. Residual standard error: 18.03
+summary(delay_model)
+# Multiple R-squared:  0.8755. Residual standard error: 14.94
 ```
 
 
@@ -51,11 +84,19 @@ Evaluating performance is a crutial step, that has yet to be treated well by the
 Show some steps for improving model performance.
 
 ```{r "Step 5: Improve Performance" }
-
+YX$dist_sqr=YX$distance^2
+delay_model_v1=lm(arr_delay~dep_delay+air_time+distance+temp+dewp+humid+wind_dir+wind_speed+wind_gust+pressure+seats+tailage+dist_sqr,data=YX)
+summary(delay_model_v1)
+# Multiple R-squared:  0.8761. Residual standard error: 14.9
+delay_model_v2=lm(arr_delay~dep_delay+air_time+distance+temp+dewp+humid+wind_dir*wind_speed+wind_gust+pressure+seats+tailage+dist_sqr+carrier+origin*dest,data=YX)
+summary(delay_model_v2)
+# Multiple R-squared:  0.8919. Residual standard error: 13.92
 ```
 
 
 # Question:
 
 Is this a good model?  (Write your answer here.)
+
+Yes, good correlation between the model prediction and the response
 
