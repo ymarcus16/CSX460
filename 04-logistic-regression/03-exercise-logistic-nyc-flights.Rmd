@@ -7,16 +7,24 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(ggplot2)
+library(magrittr)
+library(stringr)
+library(dplyr)
+library(data.table)
 ```
 
 
 ## Logsitic and Inverse Logistic Transformation 
 
 - Write an R function for the logistic function. The function should accept a `numeric` vector with values `[-Inf,Inf]` and produce a numeric vector in the the range `[0,1]`.
-
+p9 <- ggplot(data.frame(x = c(-4, 4)), aes(x = x)) +
+        stat_function(fun = dnorm)
 - Plot the logistic function from  `[-10,10]`
 
-- Write a R function for the inverse logistic function. The function should accept a `numeric` vector with values `[0,1]` and prodcuce a numeric vector in the range `[-Inf,Inf]`
+- Write a R function for the8 inverse logistic function. The function should accept a `numeric` vector with values `[0,1]` and prodcuce a numeric vector in the range `[-Inf,Inf]`
 
 - Plot the Inverse Logistic function from `[0,1]`
 
@@ -24,6 +32,26 @@ knitr::opts_chunk$set(echo = TRUE)
 **Hint:** For plotting curves see `?graphics::curve` or `?ggplot2::stat_function`
 
 ```{r "Logistic and Inverse Logistic" }
+
+
+logistic_func <- function(x_arr) {
+  res<-c()
+  for(i in 1:length(x_arr)) {
+   res[i]<-1/(1+exp(x_arr[i]*-1))
+  }
+  return(res)
+}
+
+logit_func <- function(y_arr) {
+  res<-c()
+  for(i in 1:length(y_arr)) {
+   res[i]<-log(y_arr[i])-log(1-y_arr[i])
+  }
+  return(res)
+}
+
+curve(logistic_func(x), -10, 10, n = 101, add = FALSE, type = "l")
+curve(logit_func(x), 0, 1, n = 101, add = FALSE, type = "l")
 
 ```
 
@@ -37,6 +65,14 @@ KNIT YOUR DOCUMENT AS *HTML* AND SUBMIT IT AND THE `Rmd` file.
 ## Step 1: Collect Data 
 
 ```{r "Step 1: Collect Data" }
+flights <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/flights.csv')
+planes <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/planes.csv')
+airports <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/airports.csv')
+weather <- read_csv('c:/csx460_rep/csx460/02-fundamentals/data/weather.csv')
+YX<-left_join(flights,weather,by=c("origin","year","month","day","hour"))
+YX<-left_join(YX,planes, by = "tailnum")
+YX<-left_join(YX,airports, c("dest" = "faa"))
+YX<-left_join(YX,airports, c("origin" = "faa"))
 
 ```
 
@@ -46,13 +82,19 @@ KNIT YOUR DOCUMENT AS *HTML* AND SUBMIT IT AND THE `Rmd` file.
 One of the things not done in the MLwR text is a pairwise comparison between the response and each of the predictors. Make sure to do this; this is often very illustrative of the relationship between that predictor and the response. This can be done with `pairs` or `psych::panel.pairs`
 
 
-```{r "Step 2: Explore and Prep The Data" }
+```{r "Step 2: prep data" }
+YX$tailage=YX$year.x-YX$year.y
+YX_LOG<-YX
+YX_LOG$arr_delay_gt_15 <-ifelse(YX_LOG$arr_delay >= 15, 1, 0)
 
 ```
 
 ## Step 3:  Train The Model
 
 ```{r "Step 3: Train The Model" }
+
+form <- arr_delay_gt_15 ~ dep_delay+air_time+distance+temp+dewp+humid+wind_dir+wind_speed+wind_gust+pressure+seats+tailage
+fit <- glm( form, family = binomial(logit),  YX_LOG %>% sample_n(1000) )
 
 ```
 
@@ -61,6 +103,10 @@ One of the things not done in the MLwR text is a pairwise comparison between the
 Think about some of the tools that you have for evaluating performance.  Choose one and articulate why you have chosen it.
 
 ```{r "Step 4: Evaluate Performance" }
+test_data<-sample_n(YX_LOG,10000)
+test_data$prediction<-predict(fit,test_data,type="response")
+test_data$prediction_class<- ifelse(test_data$prediction > 0.5,1,0)
+mean(ifelse(is.na(test_data$prediction_class),0,ifelse(test_data$prediction_class==test_data$arr_delay_gt_15,1,0)) )
 
 ```
 
@@ -77,7 +123,7 @@ Show some steps for improving model performance.
 # Question:
 
 Is this a good model?  (Write your answer here.)
-
+Precision is 0.65 - not bad but could be better
 
 # PART B:
 
