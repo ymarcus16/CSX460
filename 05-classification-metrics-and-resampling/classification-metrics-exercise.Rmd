@@ -1,7 +1,7 @@
 ---
 title: "Classification Metrics"
-author: "Christopher Brown"
-date: 
+author: "Yonit Marcus"
+date: 11/7/2016
 output: html_document
 ---
 
@@ -15,7 +15,17 @@ The German Credit Data (data/german_credit);
 Show All Work! 
 
 ```{r}
+library(readr)
+library(ggplot2)
+library(magrittr)
+library(stringr)
+library(dplyr)
 
+credit_data <- read_csv('c:/csx460_rep/csx460/data/german_credit.csv')
+random_ind=sample(1:1001,100)
+test<-credit_data[random_ind,]
+train<-credit_data[-random_ind,]
+credit_model=glm(Creditability~.,family = binomial(logit),data=train)
 
 ```
 
@@ -37,7 +47,26 @@ calculate:
 * Recall 
 * Precision
 
-```{r, echo=FALSE}
-
-
+```{r}
+test$prediction<-predict(credit_model,test,type="response")
+test$prediction_class<- ifelse(test$prediction > 0.5,1,0)
+credit_pred<-predict(credit_model,test,type="response")
+accuracy<-(sum(test$prediction_class==test$Creditability)/100)
+# accuracy = 84%
+error_rate<-1-accuracy
+# Err Ratte = 16%
+TP <- sum(test$prediction_class==1 & test$Creditability==1)
+TN <- sum(test$prediction_class==0 & test$Creditability==0)
+FP <- sum(test$prediction_class==1 & test$Creditability==0)
+FN <- sum(test$prediction_class==0 & test$Creditability==1)
+OP = sum(test$Creditability==1)
+ON=sum(test$Creditability==0)
+TPR<-TP/OP
+# TPR (Sensitivity,Recall) = 93.5%
+FPR <-FP/ON
+#FPR = 47.8%
+TNR <-TN/ON
+#TNR, Specificity = 52.1%
+Precision <-TP/(TP+FP)
+# Precision = 86.7%
 ```
